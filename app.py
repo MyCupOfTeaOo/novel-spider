@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--process",
                         help="下载进程数,默认5", type=int, default=5)
     parser.add_argument("--proxy",
-                        help="代理地址,默认http://127.0.0.1:1080", default=None)
+                        help="代理地址,默认http://127.0.0.1:1080", default='http://127.0.0.1:1080')
     parser.add_argument("--download", default="biquge",
                         help="下载器设置, 目前只支持 biquge(笔趣阁)")
 
