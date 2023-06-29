@@ -201,3 +201,53 @@ class BiQuGeDownload(Download):
         except:
             logging.error(traceback.format_exc())
             return False
+
+
+class Bqg220Download(Download):
+
+    _replace_text = re.compile(r"请收藏：https://m.bqg220.com")
+
+    def parse_list(self, html: BeautifulSoup) -> List[str]:
+        elements = html.select_one(".book_last").select("a")
+        links = map(
+            lambda element: urljoin(self._list_url, element["href"]),
+            filter(
+                lambda element: not element["href"].startswith("javascript:")
+                and not element["href"].startswith("#"),
+                elements,
+            ),
+        )
+
+        return list(links)
+
+    def parse_title(self, _: BeautifulSoup) -> str:
+        return ""
+
+    def parse_article(self, html: BeautifulSoup) -> str:
+        for ele in html.select(".noshow"):
+            ele.clear()
+        article = html.select_one("#chaptercontent").getText("\n")
+        article = self._replace_text.sub("", article)
+        index = article.index("\n")
+        article = article[index:]
+        return article or "本章无文字"
+
+    async def pipe(self, uid):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    uid, timeout=TIMEOUT, proxy=self._proxy, verify_ssl=False
+                ) as res:
+                    if res.status == 200 or res.status == 503:
+                        text = await res.text()
+                        html = BeautifulSoup(text, "html.parser")
+                        title = self.parse_title(html)
+                        article = self.parse_article(html)
+                        await self.create_file(
+                            self._uid_list.index(uid),
+                            "%s\n%s\n" % (title.strip(), "\t\t%s" % article.strip()),
+                        )
+                        return True
+        except:
+            logging.error(traceback.format_exc())
+            return False
